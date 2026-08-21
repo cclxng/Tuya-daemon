@@ -3,3 +3,4 @@ src/daemon
 tuya-iot-core-sdk/build/
 *.o
 *.log
+.vscode/
