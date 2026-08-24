@@ -1,5 +1,5 @@
-daemon
-src/daemon
+tuyad
+src/tuyad
 tuya-iot-core-sdk/build/
 *.o
 *.log
