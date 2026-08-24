@@ -3,9 +3,9 @@
 #include <syslog.h>
 #include "system_info.h"
 #include "report.h"
-#include "tuya_connect.h"
+#include "tuyalink_core.h"
 
-void gather_and_send_report(void)
+void gather_and_send_report(tuya_mqtt_context_t *client)
 {
     long uptime = system_info_get_uptime();
 
@@ -27,7 +27,7 @@ void gather_and_send_report(void)
     };
     char *json = build_report(report);
     if(json != NULL){
-        int json_ret = tuya_connect_report(json);
+        int json_ret = tuyalink_thing_property_report(client, NULL, json);
         if(json_ret < 0)
             syslog(LOG_ERR, "Failed to send report to Tuya (error code: %d)", json_ret);
         free(json);

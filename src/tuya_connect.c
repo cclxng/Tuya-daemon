@@ -9,8 +9,6 @@
 #include <errno.h>
 #include <string.h>
 
-static tuya_mqtt_context_t client_instance;
-
 static void on_connected(tuya_mqtt_context_t* context, void* user_data){
 	syslog(LOG_INFO, "Connected to Tuya");
 }
@@ -65,13 +63,8 @@ static void on_messages(tuya_mqtt_context_t* context, void* user_data, const tuy
     cJSON_Delete(root);
 }
 
-void tuya_connect_loop(){
-	tuya_mqtt_loop(&client_instance);
-}
-
-int tuya_connect_init(const char *deviceId, const char *deviceSecret){
+int tuya_connect_init(tuya_mqtt_context_t *client, const char *deviceId, const char *deviceSecret){
 	int ret = OPRT_OK;
-	tuya_mqtt_context_t* client = &client_instance;
 
 	ret = tuya_mqtt_init(client, &(const tuya_mqtt_config_t) {
         .host = "m1.tuyacn.com",
@@ -96,11 +89,8 @@ int tuya_connect_init(const char *deviceId, const char *deviceSecret){
 
 	return ret;
 }
-int tuya_connect_report(const char *json_payload){
-	return tuyalink_thing_property_report(&client_instance, NULL, json_payload);
-}
 
-void tuya_connect_close(){
-	tuya_mqtt_disconnect(&client_instance);
-	tuya_mqtt_deinit(&client_instance);
+void tuya_connect_close(tuya_mqtt_context_t *client){
+	tuya_mqtt_disconnect(client);
+	tuya_mqtt_deinit(client);
 }

@@ -37,8 +37,10 @@ int main(int argc, char **argv){
 			return 2;
 			}
 		}
+
+	tuya_mqtt_context_t client;
 	
-	int ret = tuya_connect_init(args.device_id, args.device_secret);
+	int ret = tuya_connect_init(&client, args.device_id, args.device_secret);
 	if(ret != 0){
 		syslog(LOG_ERR, "Connection to Tuya server unsuccessful (error code %d)", ret);
 		return 3;
@@ -47,14 +49,14 @@ int main(int argc, char **argv){
 	time_t last_report = 0;
 
 	while(keep_running){
-    		tuya_connect_loop();
+    		tuya_mqtt_loop(&client);
     		time_t now = time(NULL);
     		if(now - last_report >= REPORT_INTERVAL_SECONDS){
-        		gather_and_send_report();
+        		gather_and_send_report(&client);
         		last_report = now;
     		}
 	}
-	tuya_connect_close();
+	tuya_connect_close(&client);
 	syslog(LOG_INFO, "Connection with Tuya server was closed");
 	closelog();
 
