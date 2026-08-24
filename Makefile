@@ -3,7 +3,7 @@ EXT_DIR := ./tuya-iot-core-sdk
 .PHONY: all src clean ext
 
 all: src
-	ln -sf src/daemon ./daemon
+	ln -sf src/tuyad ./tuyad
 
 src: ext
 	$(MAKE) -C src
@@ -14,4 +14,4 @@ ext:
 
 clean:
 	$(MAKE) -C src clean
-	$(RM) -rf $(EXT_DIR)/build ./daemon
+	$(RM) -rf $(EXT_DIR)/build ./tuyad

@@ -19,20 +19,48 @@ static void on_disconnect(tuya_mqtt_context_t* context, void* user_data){
     syslog(LOG_INFO, "Disconnectd from Tuya");
 }
 
-static void on_messages(tuya_mqtt_context_t* context, void* user_data, const tuyalink_message_t* msg){
-    if(msg->type != THING_TYPE_ACTION_EXECUTE) return;
-
-    cJSON *root = cJSON_Parse(msg->data_string);
+static void handle_save_text_action(cJSON *root){
     cJSON *text = cJSON_GetObjectItem(cJSON_GetObjectItem(root, "inputParams"), "text");
+    if(!(text && cJSON_IsString(text))){
+        syslog(LOG_ERR, "save_text action missing text parameter");
+        return;
+    }
+    FILE *fp = fopen("/tmp/tuya_action.log", "w");
+    if(!fp){
+        syslog(LOG_ERR, "fopen failed: %s", strerror(errno));
+        return;
+    }
+    fprintf(fp, "%s\n", text->valuestring);
+    fclose(fp);
+}
 
-    if (text && cJSON_IsString(text)) {
-        FILE *fp = fopen("/tmp/tuya_action.log", "w");
-        if (fp) {
-            fprintf(fp, "%s\n", text->valuestring);
-            fclose(fp);
-        } else {
-            syslog(LOG_ERR, "fopen failed: %s", strerror(errno));
-        }
+static void handle_action(cJSON *root){
+    cJSON *action_code = cJSON_GetObjectItem(root, "actionCode");
+    if(!(action_code && cJSON_IsString(action_code))){
+        syslog(LOG_ERR, "Received action with no action_code.");
+        return;
+    }
+
+    if(strcmp(action_code->valuestring, "save_text") == 0)
+        handle_save_text_action(root);
+    else 
+        syslog(LOG_WARNING, "Unsuported action: %s", action_code->valuestring);
+}
+
+static void on_messages(tuya_mqtt_context_t* context, void* user_data, const tuyalink_message_t* msg){
+    cJSON *root = cJSON_Parse(msg->data_string);
+    if(root == NULL){
+        syslog(LOG_ERR, "Failed to parse message from Tuya.");
+        return;
+    }
+
+    switch (msg->type){
+        case THING_TYPE_ACTION_EXECUTE:
+        handle_action(root);
+        break;
+        default:
+        syslog(LOG_INFO, "Received unhandled message type: %d", msg->type);
+        break;
     }
     cJSON_Delete(root);
 }
@@ -58,8 +86,13 @@ int tuya_connect_init(const char *deviceId, const char *deviceSecret){
         .on_disconnect = on_disconnect,
         .on_messages = on_messages
 	});
-if(ret != 0 ) return ret;
-ret = tuya_mqtt_connect(client);
+
+    if(ret != OPRT_OK ) return ret;
+    ret = tuya_mqtt_connect(client);
+    if(ret != OPRT_OK){
+	    tuya_mqtt_deinit(client);
+	    return ret;
+    }
 
 	return ret;
 }
@@ -67,3 +100,7 @@ int tuya_connect_report(const char *json_payload){
 	return tuyalink_thing_property_report(&client_instance, NULL, json_payload);
 }
 
+void tuya_connect_close(){
+	tuya_mqtt_disconnect(&client_instance);
+	tuya_mqtt_deinit(&client_instance);
+}

@@ -61,35 +61,25 @@ float system_info_get_cpu(){
 	
 }
 
-int system_info_get_network(network_stats *stat, int max_count){
-	struct ifaddrs *ifaddr;
-
-	if(getifaddrs(&ifaddr) == -1){
-		syslog(LOG_ERR, "getifaddrs failed: %s", strerror(errno));
-		return -1;
-	}
-
-	int count = 0;
-
-	for(struct ifaddrs *ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next){
-		if(ifa->ifa_addr == NULL) continue;
-		if(strcmp(ifa->ifa_name, "lo") == 0) continue;
-		if(ifa->ifa_addr->sa_family != AF_PACKET) continue;
-		if(ifa->ifa_data == NULL) continue;
-		if(count >= max_count) continue;
-		
-		strncpy(stat[count].interface, ifa->ifa_name, IF_NAMESIZE);
-		stat[count].ip_address[0] = '\0';
-		stat[count].netmask[0] = '\0';
+static void fill_interface_stats(struct ifaddrs *ifa, network_stats *entry){	
+		if(ifa->ifa_data == NULL) return;
 		struct rtnl_link_stats *stats = (struct rtnl_link_stats *)ifa->ifa_data;
+		entry->tx_bytes = stats->tx_bytes;
+		entry->rx_bytes = stats->rx_bytes;
+}
 
-		stat[count].tx_bytes = stats->tx_bytes;
-		stat[count].rx_bytes = stats->rx_bytes;
-		count++;
+static void fill_interface_addr(struct ifaddrs *ifa, network_stats *entry){
+	struct sockaddr_in *addr = (struct sockaddr_in *) ifa->ifa_addr;
+	struct sockaddr_in *netmask = (struct sockaddr_in *) ifa->ifa_netmask;
+		
+	if(inet_ntop(AF_INET, &addr->sin_addr, entry->ip_address, INET_ADDRSTRLEN) == NULL)
+		syslog(LOG_ERR, "inet_ntop failed for interface %s: %s", ifa->ifa_name, strerror(errno));
 
+	if(inet_ntop(AF_INET, &netmask->sin_addr, entry->netmask, INET_ADDRSTRLEN) == NULL)
+    	syslog(LOG_ERR, "inet_ntop failed for interface %s: %s", ifa->ifa_name, strerror(errno));
+}
 
-	}
-
+static void fill_all_addrs(struct ifaddrs *ifaddr, network_stats *stat, int count){
 	for(struct ifaddrs *ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next){
 		if(ifa->ifa_addr == NULL) continue;
 		if(strcmp(ifa->ifa_name, "lo") == 0) continue;
@@ -104,16 +94,38 @@ int system_info_get_network(network_stats *stat, int max_count){
 			}
 		}
 		if (entry == NULL) continue;
-		
-		struct sockaddr_in *addr = (struct sockaddr_in *) ifa->ifa_addr;
-		struct sockaddr_in *netmask = (struct sockaddr_in *) ifa->ifa_netmask;
-		
-		if(inet_ntop(AF_INET, &addr->sin_addr, entry->ip_address, INET_ADDRSTRLEN) == NULL)
-			syslog(LOG_ERR, "inet_ntop failed for interface %s: %s", ifa->ifa_name, strerror(errno));
 
-		if(inet_ntop(AF_INET, &netmask->sin_addr, entry->netmask, INET_ADDRSTRLEN) == NULL)
-    			syslog(LOG_ERR, "inet_ntop failed for interface %s: %s", ifa->ifa_name, strerror(errno));
+		fill_interface_addr(ifa, entry);
 	}
+}
+
+static int get_interface_and_stats(struct ifaddrs *ifaddr, network_stats *stat, int max_count){
+	int count = 0;
+	for(struct ifaddrs *ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next){
+		if(ifa->ifa_addr == NULL) continue;
+		if(strcmp(ifa->ifa_name, "lo") == 0) continue;
+		if(ifa->ifa_addr->sa_family != AF_PACKET) continue;
+		if(count >= max_count) continue;
+
+		strncpy(stat[count].interface, ifa->ifa_name, IF_NAMESIZE);
+		stat[count].ip_address[0] = '\0';
+		stat[count].netmask[0] = '\0';
+		fill_interface_stats(ifa, &stat[count]);
+		count++;
+	}
+	return count;
+}
+
+int system_info_get_network(network_stats *stat, int max_count){
+	struct ifaddrs *ifaddr;
+	if(getifaddrs(&ifaddr) == -1){
+		syslog(LOG_ERR, "getifaddrs failed: %s", strerror(errno));
+		return -1;
+	}
+
+	int count = get_interface_and_stats(ifaddr, stat, max_count);
+
+	fill_all_addrs(ifaddr, stat, count);
 
 	freeifaddrs(ifaddr);
 	return count;
