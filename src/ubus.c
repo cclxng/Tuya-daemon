@@ -43,7 +43,7 @@ static void system_info_cb(struct ubus_request *req, int type, struct blob_attr 
 	int ret = blobmsg_parse(info_policy, __INFO_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
 	if(ret!=0) syslog(LOG_WARNING,"Could not parse data");
 	
-	if(tb[UPTIME_DATA]) out->uptime = blobmsg_get_u32(tb[UPTIME_DATA]);
+//	if(tb[UPTIME_DATA]) out->uptime = blobmsg_get_u32(tb[UPTIME_DATA]);
 
 	if(tb[MEMORY_DATA]) {
 		ret = blobmsg_parse(memory_policy, __MEMORY_MAX, mem_tb, blobmsg_data(tb[MEMORY_DATA]), blobmsg_data_len(tb[MEMORY_DATA]));
