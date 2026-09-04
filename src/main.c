@@ -12,6 +12,7 @@
 #include "signals.h"
 #include <ctype.h>
 #include "reporter.h"
+#include "ubus.h"
 
 #define REPORT_INTERVAL_SECONDS 5
 
@@ -45,6 +46,9 @@ int main(int argc, char **argv){
 		syslog(LOG_ERR, "Connection to Tuya server unsuccessful (error code %d)", ret);
 		return 3;
 	}
+
+	ubus_client_init();
+	ubus_lookup_all_objects();
 	
 	time_t last_report = 0;
 
@@ -57,6 +61,7 @@ int main(int argc, char **argv){
     		}
 	}
 	tuya_connect_close(&client);
+	ubus_client_deinit();
 	syslog(LOG_INFO, "Connection with Tuya server was closed");
 	closelog();
 
