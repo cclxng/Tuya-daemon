@@ -3,6 +3,8 @@
 #include <syslog.h>
 #include "ubus.h"
 #include <stdbool.h>
+#include "system_info.h"
+#include <string.h>
 
 static struct ubus_context *ctx;
 static uint32_t system_id, network_interface_id, network_device_id;
@@ -60,3 +62,38 @@ int ubus_get_system_info(ubus_stats_t *out){
 	}
 	return ubus_invoke(ctx, system_id, "info", NULL, system_info_cb, out, 2000);
 }
+
+static void network_info_cb(struct ubus_request *req, int type, struct blob_attr *msg) {
+	ubus_network_list_t *out = req->priv;
+	struct blob_attr *dev[__DEVICE_MAX];
+	struct blob_attr *stats[__STATS_MAX];
+	struct blob_attr *cur;
+	int rem;
+	
+	blobmsg_for_each_attr(cur, msg, rem){
+		if(out->count >= MAX_INTERFACE) break;
+		const char *name = blobmsg_name(cur);
+		if(strcmp(name, "lo") == 0) continue;
+		blobmsg_parse(device_policy, __DEVICE_MAX, dev, blobmsg_data(cur), blobmsg_data_len(cur));
+		if(!dev[DEVICE_STATISTICS]) continue;
+
+		blobmsg_parse(stats_policy, __STATS_MAX, stats, blobmsg_data(dev[DEVICE_STATISTICS]), blobmsg_data_len(dev[DEVICE_STATISTICS]));
+
+		ubus_network_t *d = &out->devices[out->count];
+		strncpy(d->interface, name, IF_NAMESIZE - 1);
+		if(stats[STATS_RX]) d->rx = blobmsg_get_u64(stats[STATS_RX]);
+		if(stats[STATS_TX]) d->tx = blobmsg_get_u64(stats[STATS_TX]);
+		out->count++;
+		}
+
+}
+
+int ubus_get_network_info(ubus_network_list_t *out){
+	if(!network_device_id_ok){
+		syslog(LOG_WARNING, "Object id not resolved");
+		return 1;
+	}
+	return ubus_invoke(ctx, network_device_id, "status", NULL, network_info_cb, out, 2000);
+}
+
+

@@ -14,16 +14,17 @@ void gather_and_send_report(tuya_mqtt_context_t *client)
 
 	float cpu_usage = system_info_get_cpu();
 
-    	network_stats interfaces[MAX_INTERFACE];
-    	int if_count = system_info_get_network(interfaces, MAX_INTERFACE);
+	ubus_network_list_t net_info = {0};
+	int net_ret = ubus_get_network_info(&net_info);
+	if(net_ret!=0) syslog(LOG_WARNING, "Ubus network info unavailable (error code: %d)", net_ret);
 
     	system_report_t report = {
         	.uptime = (long)sys_info.uptime,
         	.total_ram = (unsigned long)sys_info.total_memory,
         	.free_ram = (unsigned long)sys_info.free_memory,
         	.cpu_usage = cpu_usage,
-        	.interfaces = interfaces,
-        	.count = if_count
+        	.interfaces = net_info.devices,
+        	.count = net_info.count
     	};
     	char *json = build_report(report);
     	if(json != NULL){

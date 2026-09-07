@@ -1,13 +1,13 @@
 #ifndef REPORT_H
 #define REPORT_H
 
-#include "system_info.h"
+#include "ubus.h"
 
 typedef struct{
 	long uptime;
 	unsigned long total_ram, free_ram;
 	float cpu_usage;
-	network_stats *interfaces;
+	ubus_network_t *interfaces;
 	int count;
 } system_report_t;
 

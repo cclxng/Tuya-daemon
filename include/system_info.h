@@ -1,6 +1,6 @@
 #ifndef SYSTEM_INFO_H
 #define SYSTEM_INFO_H
-#define MAX_INTERFACE 5
+#define MAX_INTERFACE 15
 
 #include <netinet/in.h>
 #include <net/if.h>

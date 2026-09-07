@@ -13,10 +13,10 @@ static void format_cpu(char *entry, size_t entry_size, float value){
 	snprintf(entry, entry_size, "\"cpu_usage\":{\"value\":%.0f}", value);
 }
 
-static void format_interface(char *entry, size_t entry_size, network_stats *interf){
-    	snprintf(entry, entry_size, "name=%s;ip=%s;netmask=%s;tx=%lu;rx=%lu",
+static void format_interface(char *entry, size_t entry_size, ubus_network_t *interf){
+    	snprintf(entry, entry_size, "name=%s;ip=%s;netmask=%s;tx=%llu;rx=%llu",
         interf->interface, interf->ip_address, interf->netmask,
-        interf->tx_bytes, interf->rx_bytes);
+        (unsigned long long)interf->tx, (unsigned long long)interf->rx);
 }
 
 char *build_report(system_report_t report){
