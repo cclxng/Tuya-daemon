@@ -2,11 +2,13 @@
 #include <unistd.h>
 #include "system_info.h"
 #include <syslog.h>
+#include <string.h>
+#include <errno.h>
 
 int read_cpu(cpu_stat_t *stat){
 	FILE *fp = fopen("/proc/stat", "r");
 	if(fp == NULL){
-		syslog(LOG_ERR, "Couldn't open CPU stats");
+		syslog(LOG_ERR, "Couldn't open /proc/stat: %s", strerror(errno));
 		return -1;
 	}
 	int n = fscanf(fp,"cpu %lu %lu %lu %lu %lu %lu %lu %lu",

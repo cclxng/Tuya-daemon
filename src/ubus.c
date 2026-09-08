@@ -16,6 +16,7 @@ int ubus_client_init(){
 		syslog(LOG_ERR,"Failed to connect to ubus");
 		return UBUS_STATUS_CONNECTION_FAILED;
 	}
+	syslog(LOG_INFO, "Connected to ubus");
 	return 0;
 }
 
@@ -35,6 +36,10 @@ void ubus_lookup_all_objects(){
     	system_id_ok = (ubus_lookup_object(ctx, "system", &system_id) == 0);
     	network_interface_id_ok = (ubus_lookup_object(ctx, "network.interface", &network_interface_id) == 0);
     	network_device_id_ok = (ubus_lookup_object(ctx, "network.device", &network_device_id) == 0);
+	syslog(LOG_INFO, "ubus objects resolved: system=%s network.device=%s network.interface=%s",
+		system_id_ok ? "yes" : "no",
+		network_device_id_ok ? "yes" : "no",
+		network_interface_id_ok ? "yes" : "no");
 }
 
 static void system_info_cb(struct ubus_request *req, int type, struct blob_attr *msg){
@@ -43,12 +48,12 @@ static void system_info_cb(struct ubus_request *req, int type, struct blob_attr 
 	struct blob_attr *mem_tb[__MEMORY_MAX];
 
 	int ret = blobmsg_parse(info_policy, __INFO_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
-	if(ret!=0) syslog(LOG_WARNING,"Could not parse data");
+	if(ret!=0) syslog(LOG_WARNING,"Could not parse system info reply");
 	if(tb[UPTIME_DATA]) out->uptime = blobmsg_get_u32(tb[UPTIME_DATA]);
 
 	if(tb[MEMORY_DATA]) {
 		ret = blobmsg_parse(memory_policy, __MEMORY_MAX, mem_tb, blobmsg_data(tb[MEMORY_DATA]), blobmsg_data_len(tb[MEMORY_DATA]));
-		if(ret!=0) syslog(LOG_WARNING,"Could not parse data");
+		if(ret!=0) syslog(LOG_WARNING,"Could not parse memory table");
 		if(mem_tb[TOTAL_MEMORY]) out->total_memory = blobmsg_get_u64(mem_tb[TOTAL_MEMORY]);
 		if(mem_tb[FREE_MEMORY]) out->free_memory = blobmsg_get_u64(mem_tb[FREE_MEMORY]);
 	}
@@ -103,6 +108,7 @@ static void interface_info_cb(struct ubus_request *req, int type, struct blob_at
 	int rem, rem2;
 
 	blobmsg_parse(dump_policy, __DUMP_MAX, dump, blobmsg_data(msg), blobmsg_data_len(msg));
+	if(ret != 0) syslog(LOG_WARNING, "Could not parse network.interface dump reply");
 	if(!dump[DUMP_INTERFACE]) return;
 
 	blobmsg_for_each_attr(cur, dump[DUMP_INTERFACE], rem){
