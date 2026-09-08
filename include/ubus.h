@@ -31,6 +31,23 @@ enum {
 	__STATS_MAX,
 };
 
+enum {
+	DUMP_INTERFACE,
+	__DUMP_MAX,
+};
+
+enum {
+	L3_DEVICE,
+	IPV4_INTERFACE,
+	__INTERFACE_MAX,
+};
+
+enum {
+	IP_ADDRESS,
+	IP_NETMASK,
+	__IP_MAX,
+};
+
 typedef struct {
 	uint64_t free_memory, total_memory;
 	uint32_t uptime;
@@ -63,6 +80,20 @@ static const struct blobmsg_policy device_policy[__DEVICE_MAX] = {
 static const struct blobmsg_policy stats_policy[__STATS_MAX] = {
 	[STATS_RX] = { .name = "rx_bytes", .type = BLOBMSG_TYPE_INT64 },
 	[STATS_TX] = { .name = "tx_bytes", .type = BLOBMSG_TYPE_INT64 },
+};
+
+static const struct blobmsg_policy dump_policy[__DUMP_MAX] = {
+        [DUMP_INTERFACE] = { .name = "interface", .type = BLOBMSG_TYPE_ARRAY },
+};
+
+static const struct blobmsg_policy interface_policy[__INTERFACE_MAX] = {
+        [L3_DEVICE] = { .name = "l3_device", .type = BLOBMSG_TYPE_STRING },
+        [IPV4_INTERFACE] = { .name = "ipv4-address", .type = BLOBMSG_TYPE_ARRAY },
+};
+
+static const struct blobmsg_policy ip_policy[__IP_MAX] = {
+        [IP_ADDRESS] = { .name = "address", .type = BLOBMSG_TYPE_STRING },
+        [IP_NETMASK] = { .name = "mask", .type = BLOBMSG_TYPE_INT32 },
 };
 
 int ubus_client_init();
