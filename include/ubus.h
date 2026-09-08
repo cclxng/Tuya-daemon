@@ -1,12 +1,13 @@
 #ifndef UBUS_H
 #define UBUS_H
 
+#define MAX_DEVICES 15
+
 #include <libubox/blobmsg_json.h>
 #include <libubus.h>
 #include <stdint.h>
 #include <net/if.h>
 #include <netinet/in.h>
-#include "system_info.h"
 
 enum {
 	TOTAL_MEMORY,
@@ -59,7 +60,7 @@ typedef struct {
 } ubus_network_t;
 
 typedef struct {
-	ubus_network_t devices[MAX_INTERFACE];
+	ubus_network_t devices[MAX_DEVICES];
 	int count;
 } ubus_network_list_t;
 

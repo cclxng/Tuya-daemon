@@ -10,13 +10,13 @@ void gather_and_send_report(tuya_mqtt_context_t *client)
 {
 	ubus_stats_t sys_info = {0};
 	int ubus_ret = ubus_get_system_info(&sys_info);
-	if(ubus_ret!=0) syslog(LOG_WARNING, "Ubus system info unavailable (error code: %d)", ubus_ret);
+	if(ubus_ret!=0) syslog(LOG_WARNING, "Ubus system info unavailable (error code: %s)", ubus_strerror(ubus_ret));
 
 	float cpu_usage = system_info_get_cpu();
 
 	ubus_network_list_t net_info = {0};
 	int net_ret = ubus_get_network_info(&net_info);
-	if(net_ret!=0) syslog(LOG_WARNING, "Ubus network info unavailable (error code: %d)", net_ret);
+	if(net_ret!=0) syslog(LOG_WARNING, "Ubus network info unavailable (error code: %s)", ubus_strerror(net_ret));
 
     	system_report_t report = {
         	.uptime = (long)sys_info.uptime,

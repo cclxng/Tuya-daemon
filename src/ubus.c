@@ -3,7 +3,6 @@
 #include <syslog.h>
 #include "ubus.h"
 #include <stdbool.h>
-#include "system_info.h"
 #include <string.h>
 #include <arpa/inet.h>
 
@@ -15,7 +14,7 @@ int ubus_client_init(){
 	ctx = ubus_connect(NULL);
 	if(!ctx) {
 		syslog(LOG_ERR,"Failed to connect to ubus");
-		return 1;
+		return UBUS_STATUS_CONNECTION_FAILED;
 	}
 	return 0;
 }
@@ -59,7 +58,7 @@ static void system_info_cb(struct ubus_request *req, int type, struct blob_attr 
 int ubus_get_system_info(ubus_stats_t *out){
 	if(!system_id_ok){
 		syslog(LOG_WARNING, "Skipping system info: object id not resolved");
-		return 1;
+		return UBUS_STATUS_NOT_FOUND;
 	}
 	return ubus_invoke(ctx, system_id, "info", NULL, system_info_cb, out, 2000);
 }
@@ -72,7 +71,7 @@ static void network_info_cb(struct ubus_request *req, int type, struct blob_attr
 	int rem;
 	
 	blobmsg_for_each_attr(cur, msg, rem){
-		if(out->count >= MAX_INTERFACE) break;
+		if(out->count >= MAX_DEVICES) break;
 		const char *name = blobmsg_name(cur);
 		if(strcmp(name, "lo") == 0) continue;
 		blobmsg_parse(device_policy, __DEVICE_MAX, dev, blobmsg_data(cur), blobmsg_data_len(cur));
@@ -136,7 +135,7 @@ static void interface_info_cb(struct ubus_request *req, int type, struct blob_at
 int ubus_get_network_info(ubus_network_list_t *out){
 	if(!network_device_id_ok){
 		syslog(LOG_WARNING, "Skipping network info: device object id not resolved");
-		return 1;
+		return UBUS_STATUS_CONNECTION_FAILED;
 	}
 
 	int ret = ubus_invoke(ctx, network_device_id, "status", NULL, network_info_cb, out, 2000);
