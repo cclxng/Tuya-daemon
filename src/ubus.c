@@ -108,7 +108,7 @@ static void interface_info_cb(struct ubus_request *req, int type, struct blob_at
 	int rem, rem2;
 
 	blobmsg_parse(dump_policy, __DUMP_MAX, dump, blobmsg_data(msg), blobmsg_data_len(msg));
-	if(ret != 0) syslog(LOG_WARNING, "Could not parse network.interface dump reply");
+	if(rem != 0) syslog(LOG_WARNING, "Could not parse network.interface dump reply");
 	if(!dump[DUMP_INTERFACE]) return;
 
 	blobmsg_for_each_attr(cur, dump[DUMP_INTERFACE], rem){
